@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1587827878176.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3460463250",
+    "id" : "7E456662",
+    "lastKnownWriteTime" : 1587830148,
+    "last_content_update" : 1587830148308,
+    "path" : "~/Documents/se/R/R-stepik/task_1.6.R",
+    "project_path" : "task_1.6.R",
+    "properties" : {
+        "cursorPosition" : "40,0",
+        "scrollLine" : "20",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
