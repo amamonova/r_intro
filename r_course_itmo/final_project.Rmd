@@ -1,0 +1,190 @@
+---
+title: "Data Processing and Analysis Project"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+---
+
+This is a final project. Predictable, I've decided to analyze [data](https://www.kaggle.com/sudalairajkumar/novel-corona-virus-2019-dataset) connected with new *coronavirus*.
+
+Importing all needed packages:
+```{r}
+library(ggplot2)
+library(psych)
+library(gtable)
+library(grid)
+library(gridExtra)
+library(stringr)
+```
+
+
+Loading the data to dataframe and checking first five rows:
+```{r}
+df <- read.csv('~/Documents/se/R/novel-corona-virus-2019-dataset/covid_19_data.csv')
+head(df)
+```
+
+As we can see, there are 8 columns with basic info about COVID-19 spreading. Interesting columns for this project: *Country.Region*, *ObservationDate*, *Confirmed*, *Deaths*, *Recovered*.
+
+Changing the type of date column:
+```{r}
+df$ODate <- as.Date(df$ObservationDate, format = "%m/%d/%y")
+```
+
+The first distribution which was interested to investigate is *Confirmation of coronavirus*. Plots below illustrates that the form of confirmation distribution is sammilar to exponent function curve:
+```{r}
+confirmed_by_days <- aggregate(Confirmed ~ ODate, df, sum)
+exp_x <- seq(0, 20, length.out = 1000)
+exp_data <- data.frame(x=exp_x, y = exp(exp_x))
+
+p1 <- ggplot(confirmed_by_days, aes(x=ODate, y=Confirmed)) +
+  geom_line(size=1.5) + 
+  xlab("Date") + 
+  ylab("Number of confirmed cases") +
+  ggtitle("Distribution of \n coronavirus confirmation") +
+  theme(plot.title = element_text(face='bold', 
+                                  colour='black', size=18, hjust = 0.5)) +
+  scale_x_date(date_labels = "%b %d", date_breaks = "30 days")
+p2 <- ggplot(data = exp_data, aes(x=x, y=y)) +
+  geom_line(size=1.5) +
+  xlab("x") + 
+  ylab("exp(x)") +
+  ggtitle("Distribution of \n exponential function") +
+  theme(plot.title = element_text(face='bold', colour='black', size=18, hjust = 0.5)) 
+
+grid.arrange(p1, p2, nrow = 1)
+```
+
+But, I think, it's not a reason for a panic, because we (humanity) can change the constant inside the exponent function and this distribution will turn into *Logistic curve*. 
+
+
+The sad plot is a distribution deaths by days. Spoiler: it depends on a number of confirmed issues, so it's obvious that the curve will be simillar...
+```{r}
+deaths_by_days <- aggregate(Deaths ~ ODate, df, sum)
+
+ggplot(deaths_by_days, aes(x=ODate, y=Deaths)) +
+  geom_line(size=1.5) + 
+  xlab("Date") + 
+  ylab("Number of deaths") +
+  ggtitle("Distribution of \n death numbers") +
+  theme(plot.title = element_text(face='bold', 
+                                  colour='black', size=18, hjust = 0.5)) +
+  scale_x_date(date_labels = "%b %d", date_breaks = "30 days")
+```
+```{r}
+ggplot(aggregate(russia$Deaths ~ russia$ODate, russia, FUN = sum), 
+       aes(x=russia$ODate, y=russia$Deaths)) +
+  geom_line()
+```
+
+Time for good news: there is distribution of recovering (guess what, it depends on number of confirmed!)
+```{r}
+recovered_by_days <- aggregate(Recovered ~ ODate, df, sum)
+
+ggplot(recovered_by_days, aes(x=ODate, y=Recovered)) +
+  geom_line(size=1.5) + 
+  xlab("Date") + 
+  ylab("Number of recovered") +
+  ggtitle("Distribution of \n healed numbers") +
+  theme(plot.title = element_text(face='bold', 
+                                  colour='black', size=18, hjust = 0.5)) +
+  scale_x_date(date_labels = "%b %d", date_breaks = "30 days")
+```
+
+To estimate the real mortality situation we should rate the $\frac{number of deaths}{number of confirmed}$:
+```{r}
+mortality <- data.frame(x=df$ODate, y = df$Deaths/df$Confirmed)
+mortality <- mortality[mortality$x>"2020-03-01", ]
+mortality <- mortality[complete.cases(mortality), ]
+
+russia = subset(df, df$Country.Region == 'Russia')
+r_mortality <- data.frame(x=russia$ODate, y = russia$Deaths/russia$Confirmed)
+r_mortality <- r_mortality[r_mortality$x>"2020-03-01", ]
+r_mortality <- r_mortality[complete.cases(r_mortality), ]
+
+colors <- c("Russia" = "red", "ROW" = "blue")
+ggplot(aggregate(y ~ x, r_mortality, mean), 
+       aes(x=x, y=y, color='Russia')) +
+  geom_line(size=1.5) +
+  geom_line(data = aggregate(y ~ x, mortality, mean),
+            aes(x = x, y = y, color = 'ROW'), size=1.5) +
+  labs(x = 'Date',
+    y = 'Mortality Rate, %',
+    title = "Distribution of coronavirus mortality rate \n over Russia and the rest of the world",
+    color = 'Legend') +
+  theme(plot.title = element_text(face='bold', 
+                                  colour='black', size=18, hjust = 0.5)) +
+  scale_x_date(date_labels = "%b %d", date_breaks = "10 days") + 
+  scale_y_continuous(labels = scales::percent) +
+  scale_color_manual(values = colors)
+
+```
+
+Yes, there is a small growth, but the share of deaths is under 1% in Russia (or may be we don't know something...)
+
+Speaking about Russia, let's check a summary:
+```{r}
+describe(russia[, c(6, 7, 8)], skew=F)
+```
+The maximum number of deaths is 615 over all regions.
+
+
+Loading different data about COVID. Breaking down to confirmed issues:
+```{r}
+df = read.csv('~/Documents/se/R/novel-corona-virus-2019-dataset/COVID19_open_line_list.csv', 
+              na.strings=c("","N/A", "NA"))
+head(df)
+```
+There are interesting columns for this project: *age*, *sex*
+
+Counting some statistic about genders:
+```{r}
+sex <- str_replace(df$sex, 'Female', 'female')
+sex <- str_replace(sex, 'Male', 'male')
+sex <- na.omit(sex)
+sex <- sex [! sex == 4000]
+table(sex)
+```
+
+Visualizing the summary:
+```{r}
+ggplot(data.frame(sex), aes(x=factor(1), fill=sex)) +
+  geom_bar(width = 1) +
+  coord_polar("y") +
+  labs(title = "Gender ration over confirmed issue") +
+  theme(plot.title = element_text(face='bold', 
+                                  colour='black', size=18, hjust = 0.5))
+```
+
+Counting some stat about ages distribution:
+```{r warning=FALSE}
+ages <- as.numeric(df$age)
+ages[is.na(ages)] <- mean(ages, na.rm=TRUE)
+ages <- round(ages)
+lbl <- c("0-10", "10-20", "20-30", "30-40", "40-50", "50-60", "60-70", 
+"70-80", "80-90", "90-100")
+ages_cat <- as.factor(cut(ages, breaks = seq(0,100,10), labels = lbl))
+
+ggplot(data.frame(x=ages_cat), aes(x=x))+
+  geom_bar(stat="count", width=0.7, fill="#56B4E9", na.rm = T) +
+  theme_minimal() +
+  labs(x = 'Age',
+    y = 'Number of people in group',
+    title = "Ages groups over confirmed issue") +
+  theme(plot.title = element_text(face='bold', 
+                                  colour='black', size=18, hjust = 0.5))
+```
+
+~~There is some bag in R, because as we can see there is no NA issues((~~
+
+```{r}
+table(ages_cat)
+```
+
+There are a lot of researches about COVID-19 in the Internet. The purpose of this Notebook is *getting experience* with data processing and visualizing via R language.
+
+_Ideas_: deep into geographical data from the second dataset, look through sympthoms from the second dataset, aggregate data by location from the first dataset.
+
+
+
